@@ -26,6 +26,9 @@ require __DIR__ . '/../src/middleware.php';
 // Register routes
 require __DIR__ . '/../src/routes.php';
 
+
+require __DIR__ . '/../src/library.php';
+
 use \Psr\Http\Message\ServerRequestInterface as Request;
 use \Psr\Http\Message\ResponseInterface as Response;
 
@@ -35,19 +38,46 @@ require '../vendor/autoload.php';
 
 $app->get('/api/library/{id}', function (Request $request, Response $response) {
     $id = $request->getAttribute('id');
-	if(!is_numeric($id)) {
+	if(!is_numeric($id) || $id < 0) {
 		$errorData = array("ErrorMessage" => "Invalid ID");
 		$response->withJson($errorData, 200);
 	} else {
-		$responseData = array(
-						"Library Name" => "Architecture Library",
-						"Library Code" => "ARCH1000",
-						"Library Phone" => "1234567");
-		$response->withJson($responseData, 200);
+		$library = Library::populateFromId($id);
+		if($library == null) {
+			$message = array("Message" => "ID not found");
+			$response->withJson($message, 200);
+		} else {
+			$response->withJson($library, 200);
+		}
 	}
     return $response;
 });
 
+$app->post('/api/library/{token}', function (Request $request, Response $response) {
+	$authToken = $request->getAttribute('token');
+	if(!$authToken || $authToken == "") {
+		$errorData = array("ErrorMessage" => "Un authorised, invalid auth token.");
+		$response->withJson($errorData, 401);
+		return $response;
+	}
+	$library = $request->getParam("library", null);
+	if($library === null) {
+		$errorData = array("ErrorMessage" => "You must specify a library");
+		$response->withJson($errorData, 200);
+		return $response;
+	}
+	$libraryJson = json_decode($library);
+	if(!$libraryJson) {
+		$errorData = array("ErrorMessage" => "Malformed Library JSON");
+		$response->withJson($errorData, 200);
+		return $response;
+	}
+	$l = new Library($libraryJson);
+	$l->writeToFile();
+	$data = array("Message" => "Successfully Added");
+	$response->withJson($data, 200);
+	return $response;
+});
 
 // Run app
 $app->run();
