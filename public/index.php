@@ -26,5 +26,30 @@ require __DIR__ . '/../src/middleware.php';
 // Register routes
 require __DIR__ . '/../src/routes.php';
 
+use \Psr\Http\Message\ServerRequestInterface as Request;
+use \Psr\Http\Message\ResponseInterface as Response;
+
+require '../vendor/autoload.php';
+
+//Implementation Goes Here
+
+$app->get('/api/library/{id}', function (Request $request, Response $response) {
+    $id = $request->getAttribute('id');
+	if(!is_numeric($id)) {
+		$errorData = array("ErrorMessage" => "Invalid ID");
+		$response->withJson($errorData, 200);
+	} else {
+		$responseData = array(
+						"Library Name" => "Architecture Library",
+						"Library Code" => "ARCH1000",
+						"Library Phone" => "1234567");
+		$response->withJson($responseData, 200);
+	}
+    return $response;
+});
+
+
 // Run app
 $app->run();
+
+
